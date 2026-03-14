@@ -1,0 +1,10 @@
+{
+	"servers": {
+		"pyxel": {
+			"type": "stdio",
+			"command": "pyxel-mcp.exe",
+			"args": []
+		}
+	},
+	"inputs": []
+}
