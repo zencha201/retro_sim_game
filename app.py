@@ -251,12 +251,15 @@ class App:
             return tile == TILE_WATER
         if kind == "tank":
             return tile in (TILE_GRASS, TILE_FOREST)
-        # infantry
-        return tile != TILE_WATER
+        # infantry: can enter any tile (water costs double movement)
+        return True
 
     def tile_move_cost(self, kind, x, y):
-        """Movement cost to enter tile (x, y). Returns 1 normally, 2 for tank on forest."""
-        if kind == "tank" and self.tiles[y][x] == TILE_FOREST:
+        """Movement cost to enter tile (x, y). Returns 2 for tank on forest or infantry on water, 1 otherwise."""
+        tile = self.tiles[y][x]
+        if kind == "tank" and tile == TILE_FOREST:
+            return 2
+        if kind == "infantry" and tile == TILE_WATER:
             return 2
         return 1
 
@@ -356,9 +359,18 @@ class App:
         cpu_alive = len(self.living_units("cpu"))
         player_town, cpu_town, neutral = self.count_towns()
 
-        # Game over trigger: all towns occupied or one side annihilated.
-        # Winner is decided by current town counts.
-        if neutral == 0 or player_alive == 0 or cpu_alive == 0:
+        # Game over trigger: all towns occupied, one side annihilated, or one side's infantry
+        # wiped out while other unit types still survive.
+        player_has_infantry = any(u.alive and u.side == "player" and u.kind == "infantry" for u in self.units)
+        cpu_has_infantry = any(u.alive and u.side == "cpu" and u.kind == "infantry" for u in self.units)
+        game_over = (
+            neutral == 0
+            or player_alive == 0
+            or cpu_alive == 0
+            or not player_has_infantry
+            or not cpu_has_infantry
+        )
+        if game_over:
             if player_town > cpu_town:
                 self.result = "player"
             elif cpu_town > player_town:
